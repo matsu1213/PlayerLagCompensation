@@ -1,0 +1,3 @@
+name: PlayerLagCompensation
+version: '${project.version}'
+main: net.azisaba.playerlagcompensation.PlayerLagCompensation
