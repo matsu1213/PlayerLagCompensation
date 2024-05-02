@@ -2,6 +2,7 @@ package net.azisaba.playerlagcompensation;
 
 import ac.grim.grimac.player.GrimPlayer;
 import ac.grim.grimac.utils.collisions.datatypes.SimpleCollisionBox;
+import ac.grim.grimac.utils.data.Pair;
 import ac.grim.grimac.utils.nmsutil.Collisions;
 import ac.grim.grimac.utils.nmsutil.GetBoundingBox;
 import org.bukkit.Bukkit;
@@ -63,14 +64,11 @@ public class CompensationPlayer {
         v = lastRelMove.clone();
         if(ground){
             a.setY(Math.max(0, a.getY()));
+            v.setY(Math.max(0, v.getY()));
         }
         this.lastLastGround = this.lastGround;
         this.lastGround = this.ground;
         this.ground = ground;
-        if(gp != null){
-            this.ground = gp.onGround;
-            this.lastGround = gp.lastOnGround;
-        }
     }
 
     public void teleport(Vector location){
@@ -81,9 +79,9 @@ public class CompensationPlayer {
         lastLastRelMove = location.clone().zero();
     }
 
-    public Vector predictLocation(int ticks){
+    public Pair<Vector,Boolean> predictLocation(int ticks){
         Vector preLoc = lastVector.clone();
-        Vector preV = lastRelMove.clone();
+        Vector preV = v.clone();
         Vector preA = a.clone();
         boolean preGround = this.ground;
         boolean lastPreGround = this.lastGround;
@@ -104,13 +102,10 @@ public class CompensationPlayer {
                 if(preV.getX() != 0){
                     culPreV.setX(preV.getX() * 0.6 * 0.91 + 0.1 * (sprinting ? 1.3 : 1.0));
                 }
-                if(preV.getY() != 0){
-                    culPreV.setY((preV.getY() - 0.08) * 0.98);
-                }
                 if(preV.getZ() != 0){
                     culPreV.setZ(preV.getZ() * 0.6 * 0.91 + 0.1 * (sprinting ? 1.3 : 1.0));
                 }
-            }else if(lastPreGround){
+            /*}else if(lastPreGround){
                 if(preV.getX() != 0){
                     culPreV.setX(preV.getX() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0) + (sprinting ? 0.2 : 0));
                 }
@@ -119,7 +114,7 @@ public class CompensationPlayer {
                 }
                 if(preV.getZ() != 0){
                     culPreV.setZ(preV.getZ() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0) + (sprinting ? 0.2 : 0));
-                }
+                }*/
             }else {
                 if(preV.getX() != 0){
                     culPreV.setX(preV.getX() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0));
@@ -132,6 +127,7 @@ public class CompensationPlayer {
                 }
             }
 
+            /*
             if((lastPreGround && !preGround) || (lastLastPreGround && !lastPreGround && !preGround)){
                 Player p = Bukkit.getPlayer(uuid);
                 if(p.hasPotionEffect(PotionEffectType.JUMP)){
@@ -140,6 +136,7 @@ public class CompensationPlayer {
                     culPreV.setY(Math.min(culPreV.getY(), 0.42));
                 }
             }
+            */
 
             //preA.setX(preAX);
             //preA.setY(preAY);
@@ -168,18 +165,15 @@ public class CompensationPlayer {
                 }
                 if(preV.getY() != vec.getY()){
                     if(preV.getY() < 0) {
-                        lastLastPreGround = lastPreGround;
                         lastPreGround = preGround;
                         preGround = true;
                     }else {
-                        lastLastPreGround = lastPreGround;
                         lastPreGround = preGround;
                         preGround = false;
                     }
                     preA.setY(0);
                     preV.setY(0);
-                }else {
-                    lastLastPreGround = lastPreGround;
+                }else if(preV.getY() > 0){
                     lastPreGround = preGround;
                     preGround = false;
                 }
@@ -194,7 +188,7 @@ public class CompensationPlayer {
                 preLoc.add(preV);
             }
         }
-        return preLoc;
+        return new Pair<>(preLoc, preGround);
     }
 
     public Vector getLastPredictedLocation(UUID uuid){
