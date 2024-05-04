@@ -6,8 +6,7 @@ import ac.grim.grimac.utils.data.Pair;
 import ac.grim.grimac.utils.nmsutil.Collisions;
 import ac.grim.grimac.utils.nmsutil.GetBoundingBox;
 import org.bukkit.Bukkit;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -28,39 +27,46 @@ public class CompensationPlayer {
 
     public UUID uuid;
     public GrimPlayer gp;
-    public Vector lastVector;
-    public Vector lastLastVector;
-    public Vector lastLastLastVector;
-    public Vector lastRelMove;
-    public Vector lastLastRelMove;
-    public Vector v;
-    public Vector a;
+    public Location lastLocation;
+    public Location lastLastLocation;
+    public Location lastLastLastLocation;
+    public Location lastRelMove;
+    public Location lastLastRelMove;
+    public Location v;
+    public Location a;
     public boolean ground = false;
     public boolean lastGround = false;
+    public boolean sprinting = false;
     public boolean lastLastGround = false;
     public boolean xCollide = false;
     public boolean zCollide = false;
-    public HashMap<UUID, Vector> lastSentVectorMap = new HashMap<>();
-    public HashMap<UUID, Vector> lastLastSentVectorMap = new HashMap<>();
+    public HashMap<UUID, CompensationPlayerEntry> entryMap = new HashMap<>();
+    public HashMap<Integer, Pair<Location,Boolean>> calculatedLocations = new HashMap<>();
     CompensationPlayer(Player player){
         uuid = player.getUniqueId();
         gp = PlayerLagCompensation.INSTANCE.getGrimPlayer(player);
-        lastVector = player.getLocation().toVector();
-        lastLastVector = player.getLocation().toVector();
-        lastLastLastVector = player.getLocation().toVector();
-        lastRelMove = player.getLocation().toVector().clone().zero();
-        lastLastRelMove = player.getLocation().toVector().clone().zero();
-        v = player.getLocation().toVector().clone().zero();
-        a = player.getLocation().toVector().clone().zero();
+        lastLocation = player.getLocation();
+        lastLastLocation = player.getLocation();
+        lastLastLastLocation = player.getLocation();
+        lastRelMove = player.getLocation().clone().zero();
+        lastLastRelMove = player.getLocation().clone().zero();
+        v = player.getLocation().clone().zero();
+        a = player.getLocation().clone().zero();
     }
 
-    public void updateLocation(Vector location, boolean ground){
-        lastLastLastVector = lastLastVector;
-        lastLastVector = lastVector;
-        lastVector = location;
+    public void updateLocation(Location location, boolean ground){
+        if(location.equals(lastLocation)){
+            return;
+        }
+
+        calculatedLocations.clear();
+
+        lastLastLastLocation = lastLastLocation;
+        lastLastLocation = lastLocation;
+        lastLocation = location;
         lastLastRelMove = lastRelMove;
-        lastRelMove = lastVector.clone().subtract(lastLastVector);
-        a = lastRelMove.clone().subtract(v);
+        lastRelMove = this.subtractRots(lastLocation.clone().subtract(lastLastLocation), lastLastLocation);
+        a = this.subtractRots(lastRelMove.clone().subtract(v), v);
         v = lastRelMove.clone();
         if(ground){
             a.setY(Math.max(0, a.getY()));
@@ -69,84 +75,63 @@ public class CompensationPlayer {
         this.lastLastGround = this.lastGround;
         this.lastGround = this.ground;
         this.ground = ground;
+        this.sprinting = Bukkit.getPlayer(uuid).isSprinting();
+        if(gp != null){
+            this.sprinting = gp.isSprinting;
+        }
     }
 
-    public void teleport(Vector location){
-        lastVector = location;
-        lastLastVector = location;
-        lastLastLastVector = location;
+    public void teleport(Location location){
+        lastLocation = location;
+        lastLastLocation = location;
+        lastLastLastLocation = location;
         lastRelMove = location.clone().zero();
         lastLastRelMove = location.clone().zero();
     }
 
-    public Pair<Vector,Boolean> predictLocation(int ticks){
-        Vector preLoc = lastVector.clone();
-        Vector preV = v.clone();
-        Vector preA = a.clone();
+    public Pair<Location,Boolean> predictLocation(int ticks){
+        ticks = Math.abs(ticks);
+
+        if(calculatedLocations.containsKey(ticks)){
+            return calculatedLocations.get(ticks);
+        }
+
+        Location preLoc = lastLocation.clone();
+        Location preV = v.clone();
+        Location preA = a.clone();
         boolean preGround = this.ground;
         boolean lastPreGround = this.lastGround;
-        boolean lastLastPreGround = this.lastLastGround;
-        boolean sprinting = Bukkit.getPlayer(uuid).isSprinting();
-        if(gp != null){
-            sprinting = gp.isSprinting;
-        }
+
         if(this.ground){
             preV.setY(Math.max(0, preV.getY()));
         }
         for(int i = 0; i < ticks; i++){
-            Vector culPreV = preV.clone();
-            //double preAX = preV.getX();//-0.08 * preV.getX();
-            //double preAY = -0.02 * preV.getY() - 0.0784;
-            //double preAZ = preV.getZ();//0.08 * preV.getZ();
+            Location calPreV = preV.clone();
+            Location inputDirection = preV.clone().setDirection(preV.toVector());
             if(preGround){
                 if(preV.getX() != 0){
-                    culPreV.setX(preV.getX() * 0.6 * 0.91 + 0.1 * (sprinting ? 1.3 : 1.0));
+                    calPreV.setX(preV.getX() * 0.6 * 0.91 + 0.1 * (sprinting ? 1.3 : 1.0) * Math.sin((inputDirection.getYaw() - 90) * Math.PI / 180));
                 }
                 if(preV.getZ() != 0){
-                    culPreV.setZ(preV.getZ() * 0.6 * 0.91 + 0.1 * (sprinting ? 1.3 : 1.0));
+                    calPreV.setZ(preV.getZ() * 0.6 * 0.91 + 0.1 * (sprinting ? 1.3 : 1.0) * Math.cos((inputDirection.getYaw() - 90) * Math.PI / 180));
                 }
-            /*}else if(lastPreGround){
-                if(preV.getX() != 0){
-                    culPreV.setX(preV.getX() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0) + (sprinting ? 0.2 : 0));
-                }
-                if(preV.getY() != 0){
-                    culPreV.setY((preV.getY() - 0.08) * 0.98);
-                }
-                if(preV.getZ() != 0){
-                    culPreV.setZ(preV.getZ() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0) + (sprinting ? 0.2 : 0));
-                }*/
             }else {
                 if(preV.getX() != 0){
-                    culPreV.setX(preV.getX() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0));
+                    calPreV.setX(preV.getX() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0) * Math.sin((inputDirection.getYaw() - 90) * Math.PI / 180));
                 }
                 if(preV.getY() != 0){
-                    culPreV.setY((preV.getY() - 0.08) * 0.98);
+                    calPreV.setY((preV.getY() - 0.08) * 0.98);
                 }
                 if(preV.getZ() != 0){
-                    culPreV.setZ(preV.getZ() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0));
+                    calPreV.setZ(preV.getZ() * 0.91 + 0.02 * (sprinting ? 1.3 : 1.0) * Math.cos((inputDirection.getYaw() - 90) * Math.PI / 180));
                 }
             }
 
-            /*
-            if((lastPreGround && !preGround) || (lastLastPreGround && !lastPreGround && !preGround)){
-                Player p = Bukkit.getPlayer(uuid);
-                if(p.hasPotionEffect(PotionEffectType.JUMP)){
-                    culPreV.setY(Math.min(culPreV.getY(), 0.42 + p.getPotionEffect(PotionEffectType.JUMP).getAmplifier() + 1) * 0.1);
-                }else {
-                    culPreV.setY(Math.min(culPreV.getY(), 0.42));
-                }
-            }
-            */
+            preA = this.subtractRots(calPreV.clone().subtract(preV), preV);
 
-            //preA.setX(preAX);
-            //preA.setY(preAY);
-            //preA.setZ(preAZ);
-            //preV.add(preA);
-            preA = culPreV.clone().subtract(preV);
-
-            preV.setX(culPreV.getX());
-            preV.setY(culPreV.getY());
-            preV.setZ(culPreV.getZ());
+            preV.setX(calPreV.getX());
+            preV.setY(calPreV.getY());
+            preV.setZ(calPreV.getZ());
 
             if(gp != null) {
                 List<SimpleCollisionBox> collisions = new ArrayList<>();
@@ -154,7 +139,7 @@ public class CompensationPlayer {
                 Collisions.getCollisionBoxes(this.gp, box.copy().expandToCoordinate(preV.getX(), preV.getY(), preV.getZ()), collisions, false);
                 Vector vec = Collisions.collideBoundingBoxLegacy(new Vector(preV.getX(), preV.getY(), preV.getZ()), box.copy(), collisions, Arrays.asList(Collisions.Axis.Y, Collisions.Axis.X, Collisions.Axis.Z));
 
-                preLoc.add(vec);
+                this.addRots(preLoc.add(vec), preV);
 
                 if(preV.getX() != vec.getX()){
                     preA.setX(0);
@@ -185,28 +170,12 @@ public class CompensationPlayer {
                     zCollide = false;
                 }
             }else {
-                preLoc.add(preV);
+                this.addRots(preLoc.add(preV), preV);
             }
+
+            calculatedLocations.put(i + 1, new Pair<>(preLoc.clone(), preGround));
         }
         return new Pair<>(preLoc, preGround);
-    }
-
-    public Vector getLastPredictedLocation(UUID uuid){
-        return lastSentVectorMap.getOrDefault(uuid, lastLastVector);
-    }
-
-    public Vector getLastLastPredictedLocation(UUID uuid){
-        return lastLastSentVectorMap.getOrDefault(uuid, lastLastLastVector);
-    }
-
-    public Vector getLastPredictionVelocity(UUID uuid, Vector lastPredicted){
-        return lastPredicted.clone().subtract(this.getLastLastPredictedLocation(uuid));
-    }
-
-    public Vector getPredictionAcceleration(UUID uuid, Vector predict, Vector lastPredicted){
-        Vector lastPreV = this.getLastPredictionVelocity(uuid, lastPredicted);
-        Vector preV = predict.clone().subtract(lastPredicted);
-        return preV.clone().subtract(lastPreV);
     }
 
     public void removePlayer(){
@@ -215,6 +184,55 @@ public class CompensationPlayer {
 
     private double round(double value){
         return Math.round(value * 1000) / 1000.0;
+    }
+
+    public class CompensationPlayerEntry{
+        public UUID uuid;
+        public CompensationPlayer cp;
+        public Location lastSentLocation;
+        public Location lastLastSentLocation;
+        CompensationPlayerEntry(UUID uuid, CompensationPlayer cp){
+            this.uuid = uuid;
+            this.cp = cp;
+            this.lastSentLocation = cp.lastLocation;
+            this.lastLastSentLocation = cp.lastLocation;
+        }
+
+        public void updateSentLocation(Location vector){
+            lastLastSentLocation = lastSentLocation;
+            lastSentLocation = vector;
+        }
+
+        public Location getPredictionAcceleration(Location predict){
+            Location lastPreV = lastSentLocation.clone().subtract(lastLastSentLocation);
+            Location preV = predict.clone().subtract(lastSentLocation);
+            return this.subtractRots(preV.clone().subtract(lastPreV), lastPreV);
+        }
+
+        private Location subtractRots(Location loc1, Location loc2) {
+            loc1.setYaw(loc1.getYaw() - loc2.getYaw());
+            loc1.setPitch(loc1.getPitch() - loc2.getPitch());
+            return loc1;
+        }
+
+        private Location addRots(Location loc1, Location loc2) {
+            loc1.setYaw(loc1.getYaw() + loc2.getYaw());
+            loc1.setPitch(loc1.getPitch() + loc2.getPitch());
+            return loc1;
+        }
+
+    }
+
+    private Location subtractRots(Location loc1, Location loc2) {
+        loc1.setYaw(loc1.getYaw() - loc2.getYaw());
+        loc1.setPitch(loc1.getPitch() - loc2.getPitch());
+        return loc1;
+    }
+
+    private Location addRots(Location loc1, Location loc2) {
+        loc1.setYaw(loc1.getYaw() + loc2.getYaw());
+        loc1.setPitch(loc1.getPitch() + loc2.getPitch());
+        return loc1;
     }
 
 }

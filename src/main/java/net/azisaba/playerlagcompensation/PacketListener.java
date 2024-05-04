@@ -91,12 +91,14 @@ public class PacketListener extends PacketAdapter implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onTeleport(PlayerTeleportEvent e){
-        CompensationPlayer.getCompensationPlayer(e.getPlayer()).teleport(e.getTo().toVector());
+        CompensationPlayer.getCompensationPlayer(e.getPlayer()).teleport(e.getTo());
     }
 
     @EventHandler
     public void onChangeWorld(PlayerChangedWorldEvent e){
-        CompensationPlayer.getCompensationPlayer(e.getPlayer()).teleport(e.getPlayer().getLocation().toVector());
+        CompensationPlayer cp = CompensationPlayer.getCompensationPlayer(e.getPlayer());
+        cp.teleport(e.getPlayer().getLocation());
+        cp.entryMap.clear();
     }
 
 }
