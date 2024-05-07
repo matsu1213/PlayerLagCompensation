@@ -4,5 +4,8 @@ main: net.azisaba.playerlagcompensation.PlayerLagCompensation
 
 depend:
   - ProtocolLib
-loadbefore:
-  - ProtocolLib
+  - GrimAC
+  - CrackShot
+
+commands:
+  compensatedcountdown:

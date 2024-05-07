@@ -25,7 +25,10 @@ public final class PlayerLagCompensation extends JavaPlugin {
         INSTANCE = this;
         packetListener = new PacketListener();
         packetEventListener = new PacketEventListener();
+
+        Bukkit.getPluginCommand("compensatedcountdown").setExecutor(new CompensatedCountDownCommand());
         Bukkit.getPluginManager().registerEvents(packetListener, this);
+        Bukkit.getPluginManager().registerEvents(new CSCompensation(), this);
         //ProtocolLibrary.getProtocolManager().addPacketListener(packetListener);
 
         PacketEvents.getAPI().getEventManager().registerListener(packetEventListener);

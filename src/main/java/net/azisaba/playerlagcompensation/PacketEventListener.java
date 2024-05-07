@@ -194,7 +194,7 @@ public class PacketEventListener extends PacketListenerAbstract {
         //calculate new predicted location
         predictedLoc = lastPredictedLoc.clone().add(calPreV.subtract(damperA));
 
-        receive.sendMessage(/*"delayTicks: " + delayTicks + ", preX: " + this.round(predictedLoc.getX()) + */", preVX: " + this.round(rel.getX()) + ", calPreVX: " + this.round(calPreV.getX()) + ", damperAX: " + this.round(damperA.getX()));
+        //receive.sendMessage(/*"delayTicks: " + delayTicks + ", preX: " + this.round(predictedLoc.getX()) + */", preVX: " + this.round(rel.getX()) + ", calPreVX: " + this.round(calPreV.getX()) + ", damperAX: " + this.round(damperA.getX()));
 
         return new PredictionResult(predictedLoc, preGround, entry, predictedLoc.clone().set(calPreV.getX(), calPreV.getY(), calPreV.getZ()));
     }
