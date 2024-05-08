@@ -87,6 +87,8 @@ public class CompensationPlayer {
         lastLastLastLocation = location;
         lastRelMove = location.clone().zero();
         lastLastRelMove = location.clone().zero();
+        v = location.clone().zero();
+        a = location.clone().zero();
     }
 
     public Pair<Location,Boolean> predictLocation(int ticks){
@@ -191,6 +193,7 @@ public class CompensationPlayer {
         public CompensationPlayer cp;
         public Location lastSentLocation;
         public Location lastLastSentLocation;
+        public int lastDelayTicks = 0;
         CompensationPlayerEntry(UUID uuid, CompensationPlayer cp){
             this.uuid = uuid;
             this.cp = cp;
@@ -198,9 +201,10 @@ public class CompensationPlayer {
             this.lastLastSentLocation = cp.lastLocation;
         }
 
-        public void updateSentLocation(Location vector){
+        public void updateSentLocation(Location vector, int delayTicks){
             lastLastSentLocation = lastSentLocation;
             lastSentLocation = vector;
+            lastDelayTicks = delayTicks;
         }
 
         public Location getPredictionAcceleration(Location predict){

@@ -63,4 +63,8 @@ public class PlayerPingUtil {
         return highest;
     }
 
+    public static void removePlayer(UUID uuid) {
+        playerPingMap.remove(uuid);
+    }
+
 }

@@ -45,10 +45,10 @@ public class PacketEventListener extends PacketListenerAbstract {
                     if (rel.lengthSquared() > 512) {
                         Location loc = player.getLocation();
                         this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), loc.set(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), player.isOnGround());
-                        result.entry.updateSentLocation(predictedLoc);
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         return;
                     }else if(rel.lengthSquared() == 0){
-                        result.entry.updateSentLocation(predictedLoc);
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         return;
                     }
 
@@ -61,7 +61,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     packet.setDeltaZ(rel.getZ());
 
                     //e.markForReEncode(true);
-                    result.entry.updateSentLocation(predictedLoc);
+                    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             } else if (e.getPacketType() == PacketType.Play.Server.ENTITY_RELATIVE_MOVE_AND_ROTATION) {
                 WrapperPlayServerEntityRelativeMoveAndRotation packet = new WrapperPlayServerEntityRelativeMoveAndRotation(e);
@@ -78,10 +78,10 @@ public class PacketEventListener extends PacketListenerAbstract {
                     if (rel.lengthSquared() > 512) {
                         Location loc = player.getLocation().clone();
                         this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), loc.set(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), player.isOnGround());
-                        result.entry.updateSentLocation(predictedLoc);
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         return;
                     }else if(rel.lengthSquared() == 0){
-                        result.entry.updateSentLocation(predictedLoc);
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         return;
                     }
 
@@ -92,7 +92,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     e.setCancelled(true);
                     PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
                     //e.markForReEncode(true);
-                    result.entry.updateSentLocation(predictedLoc);
+                    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             }else if(e.getPacketType() == PacketType.Play.Server.ENTITY_ROTATION){
                 WrapperPlayServerEntityRotation packet = new WrapperPlayServerEntityRotation(e);
@@ -109,7 +109,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     if (rel.lengthSquared() > 512) {
                         Location loc = player.getLocation();
                         this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), loc.set(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), player.isOnGround());
-                        result.entry.updateSentLocation(predictedLoc);
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         return;
                     }
 
@@ -117,7 +117,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     e.setCancelled(true);
                     PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
                     //e.markForReEncode(true);
-                    result.entry.updateSentLocation(predictedLoc);
+                    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             } else if (e.getPacketType() == PacketType.Play.Server.ENTITY_TELEPORT) {
                 WrapperPlayServerEntityTeleport packet = new WrapperPlayServerEntityTeleport(e);
@@ -131,7 +131,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     Location rel = result.v;
 
                     if(rel.lengthSquared() == 0){
-                        result.entry.updateSentLocation(predictedLoc);
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         return;
                     }
 
@@ -140,7 +140,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     e.setCancelled(true);
                     PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
                     //e.markForReEncode(true);
-                    result.entry.updateSentLocation(predictedLoc);
+                    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             }
         }catch (Exception ex) {
@@ -172,7 +172,7 @@ public class PacketEventListener extends PacketListenerAbstract {
         Location newLoc = player.getLocation().clone();
         cp.updateLocation(newLoc, player.isOnGround());
         if(delayTicks < 1){
-            return new PredictionResult(newLoc, onGround, entry, newLoc.clone().zero());
+            return new PredictionResult(newLoc, onGround, entry, newLoc.clone().zero(), 0);
         }
 
         //predict movement
@@ -186,33 +186,39 @@ public class PacketEventListener extends PacketListenerAbstract {
         Location rel = predictedLoc.clone().subtract(lastPredictedLoc);
 
         //virtual spring force
-        Vector calPreV = rel.toVector().multiply(this.getVirtualSpringConstant(preGround));
+        Vector calPreV = rel.toVector().multiply(this.getVirtualSpringConstant(preGround, delayTicks, entry.lastDelayTicks));
 
         //virtual damper force
-        Vector damperA = entry.getPredictionAcceleration(predictedLoc).toVector().multiply(this.getVirtualDamperConstant(preGround));
+        Vector damperA = entry.getPredictionAcceleration(predictedLoc).toVector().multiply(this.getVirtualDamperConstant(preGround, delayTicks, entry.lastDelayTicks));
 
         //calculate new predicted location
         predictedLoc = lastPredictedLoc.clone().add(calPreV.subtract(damperA));
 
         //receive.sendMessage(/*"delayTicks: " + delayTicks + ", preX: " + this.round(predictedLoc.getX()) + */", preVX: " + this.round(rel.getX()) + ", calPreVX: " + this.round(calPreV.getX()) + ", damperAX: " + this.round(damperA.getX()));
 
-        return new PredictionResult(predictedLoc, preGround, entry, predictedLoc.clone().set(calPreV.getX(), calPreV.getY(), calPreV.getZ()));
+        return new PredictionResult(predictedLoc, preGround, entry, predictedLoc.clone().set(calPreV.getX(), calPreV.getY(), calPreV.getZ()), delayTicks);
     }
 
-    public Vector getVirtualSpringConstant(boolean preGround){
-        if(preGround){
-            return new Vector(1.1, 1.05, 1.1);
-        }else {
-            return new Vector(1.1, 1.1, 1.1);
-        }
+    public Vector getVirtualSpringConstant(boolean preGround, int delayTicks, int lastDelayTicks){
+
+        int delayDiff = delayTicks - lastDelayTicks;
+
+        double x = 1.0 + delayTicks * 0.05 + delayDiff * 0.05;
+        double y = (preGround ? 1.05 : 1.1);// + delayDiff * 0.05;
+        double z = 1.0 + delayTicks * 0.05 + delayDiff * 0.05;
+
+        return new Vector(x, y, z);
     }
 
-    public Vector getVirtualDamperConstant(boolean preGround){
-        if(preGround){
-            return new Vector(0.2, 0.1, 0.2);
-        }else {
-            return new Vector(0.2, 0.2, 0.2);
-        }
+    public Vector getVirtualDamperConstant(boolean preGround, int delayTicks, int lastDelayTicks){
+
+        int delayDiff = delayTicks - lastDelayTicks;
+
+        double x = delayTicks * 0.05 + delayDiff * 0.05;
+        double y = (preGround ? 0.1 : 0.2) + delayDiff * 0.05;
+        double z = delayTicks * 0.05 + delayDiff * 0.05;
+
+        return new Vector(x, y, z);
     }
 
     public void sendMoveAsTeleport(Object player, int entityId, Location loc, boolean ground){
