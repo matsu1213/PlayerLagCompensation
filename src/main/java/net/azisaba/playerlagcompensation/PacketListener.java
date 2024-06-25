@@ -1,7 +1,9 @@
 package net.azisaba.playerlagcompensation;
 
 import ac.grim.grimac.api.GrimUser;
+import ac.grim.grimac.api.events.CompletePredictionEvent;
 import ac.grim.grimac.player.GrimPlayer;
+import ac.grim.grimac.utils.anticheat.update.PredictionComplete;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.PacketAdapter;
@@ -10,6 +12,7 @@ import com.comphenix.protocol.events.PacketEvent;
 import net.minecraft.server.v1_12_R1.EntityTracker;
 import net.minecraft.server.v1_12_R1.WorldServer;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -34,6 +37,13 @@ public class PacketListener extends PacketAdapter implements Listener {
     @EventHandler
     public void onMove(PlayerMoveEvent e){
         ((CraftPlayer)e.getPlayer()).getHandle().impulse = true;
+        e.getPlayer().getWorld().spawnParticle(Particle.REDSTONE, e.getTo(), 0, 0.0001, 0.0, 255.0 /255, 1.0);
+    }
+
+    @EventHandler
+    public void onPredictionComplete(CompletePredictionEvent e){
+        GrimPlayer gp = (GrimPlayer) e.getPlayer();
+        CompensationPlayer.getCompensationPlayer((gp.bukkitPlayer)).updateLocation(new Location(gp.bukkitPlayer.getWorld(), gp.x, gp.y, gp.z), gp.onGround);
     }
 
     @EventHandler

@@ -7,5 +7,5 @@ depend:
   - GrimAC
   - CrackShot
 
-commands:
-  compensatedcountdown:
+#commands:
+#  compensatedcountdown:
