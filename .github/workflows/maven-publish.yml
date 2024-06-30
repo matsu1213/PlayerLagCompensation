@@ -45,7 +45,7 @@ jobs:
       run: curl -L -o grimac-2.3.62.jar https://hangarcdn.papermc.io/plugins/GrimAnticheat/GrimAnticheat/versions/2.3.62/PAPER/grimac-2.3.62.jar
     - name: Install GrimAC into local mvn repo
       if: steps.check_grimac.outputs.files_exists == 'false'
-      run: mvn install:install-file -Dfile=./grimac-2.3.62.jar -DgroupId=ac.grim.grimac -DartifactId=GrimAC -Dversion=2.3.62 -Dpackaging=jar -DgeneratePom=true
+      run: mvn install:install-file -Dfile=./grimac-2.3.62.jar -DgroupId=ac.grim -DartifactId=GrimAC -Dversion=2.3.62 -Dpackaging=jar -DgeneratePom=true
 
     - name: Build with Maven
       run: mvn -B package --file pom.xml
