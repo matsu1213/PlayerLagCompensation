@@ -1,14 +1,15 @@
 package net.azisaba.playerlagcompensation;
 
 import ac.grim.grimac.player.GrimPlayer;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.PacketEvents;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.event.PacketListenerAbstract;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.event.PacketListenerPriority;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.event.PacketSendEvent;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.util.Vector3d;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
-import ac.grim.grimac.shaded.com.github.retrooper.packetevents.wrapper.play.server.*;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.PacketEvents;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.event.PacketListenerPriority;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.event.PacketSendEvent;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.util.Vector3d;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.wrapper.play.server.*;
 import ac.grim.grimac.utils.data.Pair;
 import com.comphenix.protocol.events.PacketContainer;
 import com.destroystokyo.paper.ParticleBuilder;
@@ -39,33 +40,33 @@ public class PacketEventListener extends PacketListenerAbstract {
 
                     PredictionResult result = doPrediction(e, player, packet.isOnGround());
 
-                    Location predictedLoc = result.position;
+                    Location predictedLoc = result.position.clone();
                     boolean ground = result.onGround;
                     Location rel = result.v;
 
                     //we don't send a rel move packet if the player is moving too far
                     if (rel.getX() > 8 || rel.getY() > 8 || rel.getZ() > 8) {
-                        Location loc = player.getLocation();
-                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), loc.set(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), player.isOnGround());
+                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), predictedLoc, player.isOnGround());
                         result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         packet.setDeltaX(rel.getX());
                         packet.setDeltaY(rel.getY());
                         packet.setDeltaZ(rel.getZ());
+                        e.setCancelled(true);
                         return;
-                    }else if(rel.lengthSquared() == 0){
-                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
-                        return;
-                    }
+                    }//else if(rel.lengthSquared() == 0){
+                    //    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
+                    //    return;
+                    //}
 
                     WrapperPlayServerEntityRelativeMove nPacket = new WrapperPlayServerEntityRelativeMove(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), ground);
-                    e.setCancelled(true);
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    //e.setCancelled(true);
+                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
 
                     packet.setDeltaX(rel.getX());
                     packet.setDeltaY(rel.getY());
                     packet.setDeltaZ(rel.getZ());
 
-                    //e.markForReEncode(true);
+                    e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             } else if (e.getPacketType() == PacketType.Play.Server.ENTITY_RELATIVE_MOVE_AND_ROTATION) {
@@ -75,31 +76,31 @@ public class PacketEventListener extends PacketListenerAbstract {
 
                     PredictionResult result = doPrediction(e, player, packet.isOnGround());
 
-                    Location predictedLoc = result.position;
+                    Location predictedLoc = result.position.clone();
                     boolean ground = result.onGround;
                     Location rel = result.v;
 
                     //we don't send a rel move packet if the player is moving too far
                     if (rel.getX() > 8 || rel.getY() > 8 || rel.getZ() > 8) {
-                        Location loc = player.getLocation().clone();
-                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), loc.set(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), player.isOnGround());
+                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), predictedLoc, player.isOnGround());
                         result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         packet.setDeltaX(rel.getX());
                         packet.setDeltaY(rel.getY());
                         packet.setDeltaZ(rel.getZ());
+                        e.setCancelled(true);
                         return;
-                    }else if(rel.lengthSquared() == 0){
-                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
-                        return;
-                    }
+                    }//else if(rel.lengthSquared() == 0){
+                    //    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
+                    //    return;
+                    //}
 
                     packet.setDeltaX(rel.getX());
                     packet.setDeltaY(rel.getY());
                     packet.setDeltaZ(rel.getZ());
                     WrapperPlayServerEntityRelativeMoveAndRotation nPacket = new WrapperPlayServerEntityRelativeMoveAndRotation(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), packet.getYaw(), packet.getPitch(), ground);
-                    e.setCancelled(true);
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
-                    //e.markForReEncode(true);
+                    //e.setCancelled(true);
+                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             }else if(e.getPacketType() == PacketType.Play.Server.ENTITY_ROTATION){
@@ -109,21 +110,22 @@ public class PacketEventListener extends PacketListenerAbstract {
 
                     PredictionResult result = doPrediction(e, player, packet.isOnGround());
 
-                    Location predictedLoc = result.position;
+                    Location predictedLoc = result.position.clone();
                     boolean ground = result.onGround;
                     Location rel = result.v;
 
                     //we don't send a rel move packet if the player is moving too far
                     if (rel.getX() > 8 || rel.getY() > 8 || rel.getZ() > 8) {
-                        Location loc = player.getLocation();
-                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), loc.set(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), player.isOnGround());
+                        //Location loc = player.getLocation();
+                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), predictedLoc, player.isOnGround());
                         result.entry.updateSentLocation(predictedLoc, result.delayTicks);
+                        e.setCancelled(true);
                         return;
                     }
 
                     WrapperPlayServerEntityRelativeMoveAndRotation nPacket = new WrapperPlayServerEntityRelativeMoveAndRotation(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), packet.getYaw(), packet.getPitch(), ground);
                     e.setCancelled(true);
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    PacketEvents.getAPI().getPlayerManager().sendPacket(e.getPlayer(), nPacket);
                     //e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
@@ -134,20 +136,20 @@ public class PacketEventListener extends PacketListenerAbstract {
 
                     PredictionResult result = doPrediction(e, player, packet.isOnGround());
 
-                    Location predictedLoc = result.position;
+                    Location predictedLoc = result.position.clone();
                     boolean ground = result.onGround;
                     Location rel = result.v;
 
-                    if(rel.lengthSquared() == 0){
-                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
-                        return;
-                    }
+                    //if(rel.lengthSquared() == 0){
+                    //    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
+                    //    return;
+                    //}
 
                     packet.setPosition(new Vector3d(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()));
                     WrapperPlayServerEntityTeleport nPacket = new WrapperPlayServerEntityTeleport(packet.getEntityId(), new Vector3d(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), packet.getYaw(), packet.getPitch(), ground);
-                    e.setCancelled(true);
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
-                    //e.markForReEncode(true);
+                    //e.setCancelled(true);
+                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             }else if(e.getPacketType() == PacketType.Play.Server.ENTITY_VELOCITY){
@@ -155,14 +157,22 @@ public class PacketEventListener extends PacketListenerAbstract {
                 Player player = getPlayerById(packet.getEntityId());
                 if(packet.getEntityId() == e.getUser().getEntityId() && player != null){
                     CompensationPlayer cp = CompensationPlayer.getCompensationPlayer(player);
-                    int sentPing = player.spigot().getPing();
+                    int sentPing = 0;//player.spigot().getPing();
                     if (cp.gp != null) {
                         sentPing = cp.gp.getTransactionPing();
                     }
-                    int delayTicks = (int) Math.round(sentPing / 100D);
+                    int delayTicks = sentPing / 100;//(int) Math.round(sentPing / 100D);
                     cp.lastVelocity = new CompensationVelocityData(new Vector(packet.getVelocity().x, packet.getVelocity().y, packet.getVelocity().z), delayTicks);
                 }
-
+                e.markForReEncode(false);
+            }else if(e.getPacketType() == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK){
+                WrapperPlayServerPlayerPositionAndLook packet = new WrapperPlayServerPlayerPositionAndLook(e);
+                if(!packet.isRelativeFlag(RelativeFlag.X) && !packet.isRelativeFlag(RelativeFlag.Y) && !packet.isRelativeFlag(RelativeFlag.Z)){
+                    CompensationPlayer.getCompensationPlayer((Player)e.getPlayer()).teleport(new Location(((Player) e.getPlayer()).getWorld() ,packet.getX(), packet.getY(), packet.getZ(), packet.getYaw(), packet.getPitch()));
+                }
+                e.markForReEncode(false);
+            }else {
+                e.markForReEncode(false);
             }
         }catch (Exception ex) {
             ex.printStackTrace();
@@ -173,16 +183,16 @@ public class PacketEventListener extends PacketListenerAbstract {
         GrimPlayer sentUser = PlayerLagCompensation.INSTANCE.getGrimPlayer(player);
         Player receive = this.getPlayerById(e.getUser().getEntityId());
         GrimPlayer receiveTargetUser = PlayerLagCompensation.INSTANCE.getGrimPlayer(receive);
-        int sentPing = player.spigot().getPing();
+        int sentPing = 0;//player.spigot().getPing();
         if (sentUser != null) {
             sentPing = sentUser.getTransactionPing();
         }
-        int receivePing = receive.spigot().getPing();
+        int receivePing = 0;//receive.spigot().getPing();
         if (receiveTargetUser != null) {
             receivePing = receiveTargetUser.getTransactionPing();
         }
         int delay = sentPing + receivePing;
-        int delayTicks = (int) Math.round(delay / 100D);
+        int delayTicks = delay / 100;//(int) Math.round(delay / 100D);
 
         CompensationPlayer cp = CompensationPlayer.getCompensationPlayer(player);
         CompensationPlayer.CompensationPlayerEntry entry = cp.entryMap.get(receive.getUniqueId());
@@ -214,9 +224,12 @@ public class PacketEventListener extends PacketListenerAbstract {
         //calculate new predicted location
         predictedLoc = lastPredictedLoc.clone().add(calPreV.subtract(damperA));
 
-        //receive.sendMessage(/*"delayTicks: " + delayTicks + ", preX: " + this.round(predictedLoc.getX()) + */", preVX: " + this.round(rel.getX()) + ", calPreVX: " + this.round(calPreV.getX()) + ", damperAX: " + this.round(damperA.getX()));
+        if(cp.lastVelocity != null){
+            //receive.sendMessage("delayTicks: " + cp.lastVelocity.delayTicks + ", veloY: " + cp.lastVelocity.velocity.getY());
+        }
+        //player.sendMessage("delayTicks: " + delayTicks /*+ ", preY: " + this.round(predictedLoc.getY()) + ", preVY: " + this.round(rel.getY())*/ + ", relY: " + this.round(rel.getY()) + ", calPreVY: " + this.round(calPreV.getY()));
 
-        return new PredictionResult(predictedLoc, preGround, entry, predictedLoc.clone().set(calPreV.getX(), calPreV.getY(), calPreV.getZ()), delayTicks);
+        return new PredictionResult(predictedLoc, preGround, entry, calPreV.clone().toLocation(predictedLoc.getWorld()), delayTicks);
     }
 
     public Vector getVirtualSpringConstant(boolean onGround, int delayTicks, int lastDelayTicks, boolean kbDesync){
@@ -228,7 +241,7 @@ public class PacketEventListener extends PacketListenerAbstract {
         int delayDiff = delayTicks - lastDelayTicks;
 
         double x = 1.0 + delayTicks * 0.04 + delayDiff * 0.05;
-        double y = (onGround ? 1.05 : 1.05);// + delayDiff * 0.05;
+        double y = (onGround ? 1 : 1.05);// + delayDiff * 0.05;
         double z = 1.0 + delayTicks * 0.04 + delayDiff * 0.05;
 
         return new Vector(x, y, z);
@@ -243,7 +256,7 @@ public class PacketEventListener extends PacketListenerAbstract {
         int delayDiff = delayTicks - lastDelayTicks;
 
         double x = delayTicks * 0.05 + delayDiff * 0.05;
-        double y = delayTicks * 0.05 + delayDiff * 0.05;
+        double y = onGround ? 0 : delayTicks * 0.05 + delayDiff * 0.05;
         double z = delayTicks * 0.05 + delayDiff * 0.05;
 
         return new Vector(x, y, z);
@@ -252,7 +265,6 @@ public class PacketEventListener extends PacketListenerAbstract {
     public void sendMoveAsTeleport(Object player, int entityId, Location loc, boolean ground){
         WrapperPlayServerEntityTeleport packet = new WrapperPlayServerEntityTeleport(entityId, new Vector3d(loc.getX(), loc.getY(), loc.getZ()), loc.getYaw(), loc.getPitch(), ground);
         PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, packet);
-
     }
 
     public Player getPlayerById(int id){

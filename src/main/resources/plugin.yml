@@ -3,9 +3,19 @@ version: '${project.version}'
 main: net.azisaba.playerlagcompensation.PlayerLagCompensation
 
 depend:
-  - ProtocolLib
   - GrimAC
-  - CrackShot
+
+softdepend:
+  - ProtocolLib
+  - ProtocolSupport
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot
+
+loadbefore:
+  - GrimAC
+#  - CrackShot
 
 #commands:
 #  compensatedcountdown:

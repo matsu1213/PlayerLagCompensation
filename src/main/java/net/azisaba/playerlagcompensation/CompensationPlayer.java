@@ -88,8 +88,11 @@ public class CompensationPlayer {
         lastLocation = location;
         lastLastRelMove = lastRelMove;
         lastRelMove = this.subtractRots(lastLocation.clone().subtract(lastLastLocation), lastLastLocation);
-        if(!kbDesync && lastVelocity != null){
+        if(!kbDesync && lastVelocity != null && gp != null && gp.checkManager.getKnockbackHandler().getFutureKnockback().getFirst() != null){
             kbDesync = true;
+            desyncV = lastLastRelMove.clone();
+            desyncLastLoc = lastLastLocation.clone();
+            desyncLoc = location.clone();
             gp.bukkitPlayer.sendMessage("desync");
         }
         a = this.subtractRots(lastRelMove.clone().subtract(v), v);
@@ -106,7 +109,15 @@ public class CompensationPlayer {
         if(kbDesync){
             Location lastDesyncV = desyncV.clone();
             if(gp != null){
-                gp.bukkitPlayer.getWorld().spawnParticle(Particle.REDSTONE, desyncLoc, 0, 0.0001, 0.0, 255.0 / 255, 1.0);
+                boolean flag = gp.likelyKB != null || gp.firstBreadKB != null;
+                if(flag){
+                    desyncV = gp.clientVelocity.clone().toLocation(gp.bukkitPlayer.getWorld());
+                    kbDesync = false;
+                    gp.bukkitPlayer.sendMessage("resync");
+                    lastVelocity = null;
+                }
+                //gp.bukkitPlayer.sendMessage("realY: " + gp.clientVelocity.getY() + ", kb: " + flag);
+                //gp.bukkitPlayer.getWorld().spawnParticle(Particle.REDSTONE, desyncLoc, 0, 0.0001, 0.0, 255.0 / 255, 1.0);
             }
             desyncV = this.subtractRots(desyncLoc.clone().subtract(desyncLastLoc), desyncLastLoc.clone());
             desyncA = this.subtractRots(lastDesyncV.subtract(desyncV), desyncV);
@@ -162,6 +173,9 @@ public class CompensationPlayer {
             desyncV = preV.clone();
             desyncGround = preGround;
             if(lastVelocity != null && lastVelocity.delayTicks == 0){
+                preV.add(lastVelocity.velocity);
+                desyncV = preV.clone();
+                preLoc.add(desyncV);
                 lastVelocity = null;
             }
         }
@@ -246,12 +260,13 @@ public class CompensationPlayer {
                 }else {
                     zCollide = false;
                 }
+
             }else {
                 this.addRots(preLoc.add(preV), preV);
             }
 
             if(kbDesync || true) {
-                preLoc.getWorld().spawnParticle(Particle.REDSTONE, preLoc, 0, 0.0001, 255.0 / 255, 0.0, 1.0);
+                //preLoc.getWorld().spawnParticle(Particle.REDSTONE, preLoc, 0, 0.0001, 255.0 / 255, 0.0, 1.0);
             }
             calculatedLocations.put(i + 1, new Pair<>(preLoc.clone(), preGround));
             if(i == 0){
@@ -262,7 +277,10 @@ public class CompensationPlayer {
             }
         }
         if(kbDesync || true) {
-            preLoc.getWorld().spawnParticle(Particle.REDSTONE, preLoc, 0, 255.0 / 255, 0.0, 0.0, 1.0);
+            //preLoc.getWorld().spawnParticle(Particle.REDSTONE, preLoc, 0, 255.0 / 255, 0.0, 0.0, 1.0);
+            if(gp != null){
+                //gp.bukkitPlayer.sendMessage("desyncY: " + preV.getY() + ", desyncLocY: " + preLoc.getY());
+            }
         }
         return new Pair<>(preLoc.clone(), preGround);
     }
