@@ -1,24 +1,20 @@
 package net.azisaba.playerlagcompensation;
 
 import ac.grim.grimac.player.GrimPlayer;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.PacketEvents;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.event.PacketListenerAbstract;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.event.PacketListenerPriority;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.event.PacketSendEvent;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.util.Vector3d;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.wrapper.play.server.*;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
+import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 import ac.grim.grimac.utils.data.Pair;
-import com.comphenix.protocol.events.PacketContainer;
 import com.destroystokyo.paper.ParticleBuilder;
-import net.minecraft.server.v1_12_R1.EnumParticle;
-import net.minecraft.server.v1_12_R1.PacketPlayOutWorldParticles;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -31,6 +27,7 @@ public class PacketEventListener extends PacketListenerAbstract {
     @Override
     public void onPacketSend(PacketSendEvent e) {
         try {
+            if(!ToggleCompensationCommand.shouldCompensate) return;
             if (e.isCancelled()) return;
 
             if (e.getPacketType() == PacketType.Play.Server.ENTITY_RELATIVE_MOVE) {
@@ -153,6 +150,8 @@ public class PacketEventListener extends PacketListenerAbstract {
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             }else if(e.getPacketType() == PacketType.Play.Server.ENTITY_VELOCITY){
+                if(!ToggleVelocityCompensationCommand.shouldVelocityCompensate) return;
+
                 WrapperPlayServerEntityVelocity packet = new WrapperPlayServerEntityVelocity(e);
                 Player player = getPlayerById(packet.getEntityId());
                 if(packet.getEntityId() == e.getUser().getEntityId() && player != null){
@@ -255,9 +254,9 @@ public class PacketEventListener extends PacketListenerAbstract {
 
         int delayDiff = delayTicks - lastDelayTicks;
 
-        double x = delayTicks * 0.05 + delayDiff * 0.05;
+        double x = delayTicks * 0.1 + delayDiff * 0.05;
         double y = onGround ? 0 : delayTicks * 0.05 + delayDiff * 0.05;
-        double z = delayTicks * 0.05 + delayDiff * 0.05;
+        double z = delayTicks * 0.1 + delayDiff * 0.05;
 
         return new Vector(x, y, z);
     }

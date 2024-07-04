@@ -77,7 +77,7 @@ public class CompensationPlayer {
         if(gp != null){
             if(kbDesync && lastVelocity == null && ground && gp.checkManager.getKnockbackHandler().getFutureKnockback().getFirst() == null){
                 kbDesync = false;
-                gp.bukkitPlayer.sendMessage("resync");
+                //gp.bukkitPlayer.sendMessage("resync");
             }
         }else {
             kbDesync = false;
@@ -113,7 +113,7 @@ public class CompensationPlayer {
                 if(flag){
                     desyncV = gp.clientVelocity.clone().toLocation(gp.bukkitPlayer.getWorld());
                     kbDesync = false;
-                    gp.bukkitPlayer.sendMessage("resync");
+                    //gp.bukkitPlayer.sendMessage("resync");
                     lastVelocity = null;
                 }
                 //gp.bukkitPlayer.sendMessage("realY: " + gp.clientVelocity.getY() + ", kb: " + flag);
@@ -204,20 +204,20 @@ public class CompensationPlayer {
 
             if(preGround){
                 if(preV.getX() != 0){
-                    calPreV.setX(preV.getX() * 0.6 * 0.91 - (sprinting ? 0.1 * 1.3 * d0: 0.0));
+                    calPreV.setX(preV.getX() * 0.6 * 0.91 );// (sprinting ? 0.1 * 1.3 * d0: 0.0));
                 }
                 if(preV.getZ() != 0){
-                    calPreV.setZ(preV.getZ() * 0.6 * 0.91 + (sprinting ? 0.1 * 1.3 * d1: 0.0));
+                    calPreV.setZ(preV.getZ() * 0.6 * 0.91 );// + (sprinting ? 0.1 * 1.3 * d1: 0.0));
                 }
             }else {
                 if(preV.getX() != 0){
-                    calPreV.setX(preV.getX() * 0.91 - (sprinting ? 0.02 * 1.3 * d0: 0.0));
+                    calPreV.setX(preV.getX() * 0.91 );// - (sprinting ? 0.02 * 1.3 * d0: 0.0));
                 }
                 if(preV.getY() != 0){
                     calPreV.setY((preV.getY() - 0.08) * 0.98);
                 }
                 if(preV.getZ() != 0){
-                    calPreV.setZ(preV.getZ() * 0.91 + (sprinting ? 0.02 * 1.3 * d1: 0.0));
+                    calPreV.setZ(preV.getZ() * 0.91 );// + (sprinting ? 0.02 * 1.3 * d1: 0.0));
                 }
             }
 

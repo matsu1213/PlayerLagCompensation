@@ -2,8 +2,8 @@ package net.azisaba.playerlagcompensation;
 
 import ac.grim.grimac.api.GrimAbstractAPI;
 import ac.grim.grimac.player.GrimPlayer;
-import net.azisaba.playerlagcompensation.shaded.com.github.retrooper.packetevents.PacketEvents;
-import net.azisaba.playerlagcompensation.shaded.io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -19,8 +19,7 @@ public final class PlayerLagCompensation extends JavaPlugin {
     public void onLoad() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
         PacketEvents.getAPI().getSettings().reEncodeByDefault(true)
-                .checkForUpdates(true)
-                .bStats(true);
+                .checkForUpdates(false);
         PacketEvents.getAPI().load();
     }
 
@@ -35,6 +34,9 @@ public final class PlayerLagCompensation extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(packetListener, this);
         //Bukkit.getPluginManager().registerEvents(new CSCompensation(), this);
 
+        Bukkit.getPluginCommand("togglecompensation").setExecutor(new ToggleCompensationCommand());
+        Bukkit.getPluginCommand("togglevelocitycompensation").setExecutor(new ToggleCompensationCommand());
+
         PacketEvents.getAPI().getEventManager().registerListener(packetEventListener);
         PacketEvents.getAPI().init();
 
@@ -48,8 +50,7 @@ public final class PlayerLagCompensation extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        //ProtocolLibrary.getProtocolManager().removePacketListener(packetListener);
-        PacketEvents.getAPI().getEventManager().unregisterListener(packetEventListener);
+        PacketEvents.getAPI().terminate();
     }
 
     public GrimPlayer getGrimPlayer(Player player) {

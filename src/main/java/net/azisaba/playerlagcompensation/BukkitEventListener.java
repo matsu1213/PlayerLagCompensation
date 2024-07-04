@@ -4,7 +4,6 @@ import ac.grim.grimac.api.events.CompletePredictionEvent;
 import ac.grim.grimac.player.GrimPlayer;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
