@@ -1,0 +1,56 @@
+# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
+# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
+
+name: Maven Package
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+    - name: Check CrackShot existence
+      id: check_crackshot
+      uses: andstor/file-existence-action@v3
+      with:
+        files: "/home/runner/.m2/repository/com/shampaggon/CrackShot/0.98.11/CrackShot-0.98.11.pom"
+    - name: Download CrackShot v0.98.11
+      if: steps.check_crackshot.outputs.files_exists == 'false'
+      run: curl -L -o CrackShot.jar https://dev.bukkit.org/projects/crackshot/files/3151915/download
+    - name: Install CrackShot into local mvn repo
+      if: steps.check_crackshot.outputs.files_exists == 'false'
+      run: mvn install:install-file -Dfile=./CrackShot.jar -DgroupId=com.shampaggon -DartifactId=CrackShot -Dversion=0.98.11 -Dpackaging=jar -DgeneratePom=true
+
+    - name: Check GrimAC existence
+      id: check_grimac
+      uses: andstor/file-existence-action@v3
+      with:
+        files: "/home/runner/.m2/repository/ac/grim/grimac/2.3.62/grimac-2.3.62.pom"
+    - name: Download GrimAC
+      if: steps.check_grimac.outputs.files_exists == 'false'
+      run: curl -L -o grimac-2.3.62.jar https://hangarcdn.papermc.io/plugins/GrimAnticheat/GrimAnticheat/versions/2.3.62/PAPER/grimac-2.3.62.jar
+    - name: Install GrimAC into local mvn repo
+      if: steps.check_grimac.outputs.files_exists == 'false'
+      run: mvn install:install-file -Dfile=./grimac-2.3.62.jar -DgroupId=ac.grim -DartifactId=GrimAC -Dversion=2.3.62 -Dpackaging=jar -DgeneratePom=true
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.0
+      with:
+        path: /home/runner/work/PlayerLagCompensation/PlayerLagCompensation/target/
