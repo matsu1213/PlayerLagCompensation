@@ -149,10 +149,16 @@ public class CompensationPlayer {
         desyncLastLoc = location;
         desyncV = location.clone().zero();
         desyncA = location.clone().zero();
+        entryMap.clear();
     }
 
     public Pair<Location,Boolean> predictLocation(int ticks){
         ticks = Math.abs(ticks);
+
+        if(this.gp == null){
+            Player player = Bukkit.getPlayer(uuid);
+            return new Pair<>(player.getLocation(), player.isOnGround());
+        }
 
         if(calculatedLocations.containsKey(ticks)){
             return calculatedLocations.get(ticks);
@@ -229,7 +235,7 @@ public class CompensationPlayer {
 
             if(gp != null) {
                 List<SimpleCollisionBox> collisions = new ArrayList<>();
-                SimpleCollisionBox box = GetBoundingBox.getBoundingBoxFromPosAndSize(preLoc.getX(), preLoc.getY(), preLoc.getZ(), 0.6f, 1.8f);
+                SimpleCollisionBox box = GetBoundingBox.getBoundingBoxFromPosAndSizeRaw(preLoc.getX(), preLoc.getY(), preLoc.getZ(), 0.6f, 1.8f);
                 Collisions.getCollisionBoxes(this.gp, box.copy().expandToCoordinate(preV.getX(), preV.getY(), preV.getZ()), collisions, false);
                 Vector vec = Collisions.collideBoundingBoxLegacy(new Vector(preV.getX(), preV.getY(), preV.getZ()), box.copy(), collisions, Arrays.asList(Collisions.Axis.Y, Collisions.Axis.X, Collisions.Axis.Z));
 

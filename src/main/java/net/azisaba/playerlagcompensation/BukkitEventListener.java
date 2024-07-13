@@ -5,6 +5,7 @@ import ac.grim.grimac.player.GrimPlayer;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
 
@@ -19,7 +20,9 @@ public class BukkitEventListener implements Listener {
     @EventHandler
     public void onPredictionComplete(CompletePredictionEvent e){
         GrimPlayer gp = (GrimPlayer) e.getPlayer();
-        CompensationPlayer.getCompensationPlayer((gp.bukkitPlayer)).updateLocation(new Location(gp.bukkitPlayer.getWorld(), gp.x, gp.y, gp.z), gp.onGround);
+        if(gp.getSetbackTeleportUtil().hasAcceptedSpawnTeleport) {
+            CompensationPlayer.getCompensationPlayer((gp.bukkitPlayer)).updateLocation(new Location(gp.bukkitPlayer.getWorld(), gp.x, gp.y, gp.z), gp.onGround);
+        }
     }
 
     @EventHandler
@@ -37,7 +40,11 @@ public class BukkitEventListener implements Listener {
     public void onChangeWorld(PlayerChangedWorldEvent e){
         CompensationPlayer cp = CompensationPlayer.getCompensationPlayer(e.getPlayer());
         cp.teleport(e.getPlayer().getLocation());
-        cp.entryMap.clear();
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRespawn(PlayerRespawnEvent e){
+        CompensationPlayer.getCompensationPlayer(e.getPlayer()).teleport(e.getRespawnLocation());
     }
 
 }

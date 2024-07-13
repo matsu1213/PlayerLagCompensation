@@ -50,18 +50,12 @@ public class PacketEventListener extends PacketListenerAbstract {
                         packet.setDeltaZ(rel.getZ());
                         e.setCancelled(true);
                         return;
-                    }//else if(rel.lengthSquared() == 0){
-                    //    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
-                    //    return;
-                    //}
-
-                    WrapperPlayServerEntityRelativeMove nPacket = new WrapperPlayServerEntityRelativeMove(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), ground);
-                    //e.setCancelled(true);
-                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    }
 
                     packet.setDeltaX(rel.getX());
                     packet.setDeltaY(rel.getY());
                     packet.setDeltaZ(rel.getZ());
+                    packet.setOnGround(ground);
 
                     e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
@@ -86,17 +80,13 @@ public class PacketEventListener extends PacketListenerAbstract {
                         packet.setDeltaZ(rel.getZ());
                         e.setCancelled(true);
                         return;
-                    }//else if(rel.lengthSquared() == 0){
-                    //    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
-                    //    return;
-                    //}
+                    }
 
                     packet.setDeltaX(rel.getX());
                     packet.setDeltaY(rel.getY());
                     packet.setDeltaZ(rel.getZ());
-                    WrapperPlayServerEntityRelativeMoveAndRotation nPacket = new WrapperPlayServerEntityRelativeMoveAndRotation(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), packet.getYaw(), packet.getPitch(), ground);
-                    //e.setCancelled(true);
-                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    packet.setOnGround(ground);
+
                     e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
@@ -114,7 +104,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     //we don't send a rel move packet if the player is moving too far
                     if (rel.getX() > 8 || rel.getY() > 8 || rel.getZ() > 8) {
                         //Location loc = player.getLocation();
-                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), predictedLoc, player.isOnGround());
+                        this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), predictedLoc, ground);
                         result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         e.setCancelled(true);
                         return;
@@ -122,7 +112,7 @@ public class PacketEventListener extends PacketListenerAbstract {
 
                     WrapperPlayServerEntityRelativeMoveAndRotation nPacket = new WrapperPlayServerEntityRelativeMoveAndRotation(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), packet.getYaw(), packet.getPitch(), ground);
                     e.setCancelled(true);
-                    PacketEvents.getAPI().getPlayerManager().sendPacket(e.getPlayer(), nPacket);
+                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
                     //e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
@@ -135,17 +125,10 @@ public class PacketEventListener extends PacketListenerAbstract {
 
                     Location predictedLoc = result.position.clone();
                     boolean ground = result.onGround;
-                    Location rel = result.v;
-
-                    //if(rel.lengthSquared() == 0){
-                    //    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
-                    //    return;
-                    //}
 
                     packet.setPosition(new Vector3d(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()));
-                    WrapperPlayServerEntityTeleport nPacket = new WrapperPlayServerEntityTeleport(packet.getEntityId(), new Vector3d(predictedLoc.getX(), predictedLoc.getY(), predictedLoc.getZ()), packet.getYaw(), packet.getPitch(), ground);
-                    //e.setCancelled(true);
-                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    packet.setOnGround(ground);
+
                     e.markForReEncode(true);
                     result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
