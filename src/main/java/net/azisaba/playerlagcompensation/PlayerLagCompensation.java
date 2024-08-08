@@ -22,8 +22,6 @@ public final class PlayerLagCompensation extends JavaPlugin {
         PacketEvents.getAPI().getSettings().reEncodeByDefault(true)
                 .checkForUpdates(false);
         PacketEvents.getAPI().load();
-
-        configManager = new ConfigManager();
     }
 
     @Override
@@ -42,6 +40,8 @@ public final class PlayerLagCompensation extends JavaPlugin {
 
         PacketEvents.getAPI().getEventManager().registerListener(packetEventListener);
         PacketEvents.getAPI().init();
+
+        configManager = new ConfigManager();
 
         //Bukkit.getScheduler().runTaskTimer(this, () -> {
         //    for(Player player : Bukkit.getOnlinePlayers()){
