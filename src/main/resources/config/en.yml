@@ -5,5 +5,5 @@ max-predict-ticks: -1
 # Whether to predict knockback. This will increase the KB's response speed, but the predicted position may be inaccurate.
 predict-velocity: true
 
-# How many ticks ahead to forecast the sprint, or -1 for unlimited.
+# How many ticks ahead to predict the sprint. -1 is unlimited.
 max-sprint-ticks: 0
