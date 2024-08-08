@@ -42,13 +42,15 @@
                                 </relocation>
                                 <relocation>
                                     <pattern>net.kyori</pattern>
-                                    <shadedPattern>net.azisaba.playerlagcompensation.shaded.net.kyori
-                                    </shadedPattern> <!--relocate packetevents package. choose something unique!-->
+                                    <shadedPattern>net.azisaba.playerlagcompensation.shaded.kyori</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.google.gson</pattern>
-                                    <shadedPattern>net.azisaba.playerlagcompensation.shaded.com.google.gson
-                                    </shadedPattern> <!--relocate packetevents package. choose something unique!-->
+                                    <shadedPattern>net.azisaba.playerlagcompensation.shaded.gson</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.code.gson</pattern>
+                                    <shadedPattern>net.azisaba.playerlagcompensation.shaded.gson</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
@@ -75,6 +77,10 @@
 
     <repositories>
         <repository>
+            <id>configuralize</id>
+            <url>https://nexus.scarsz.me/content/repositories/releases</url>
+        </repository>
+        <repository>
             <id>codemc-releases</id>
             <url>https://repo.codemc.io/repository/maven-releases/</url>
         </repository>
@@ -100,7 +106,7 @@
         <dependency>
             <groupId>com.destroystokyo.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.12.2-R0.1-SNAPSHOT</version>
+            <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -114,6 +120,16 @@
             <artifactId>GrimAC</artifactId>
             <version>2.3.65</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>github.scarsz</groupId>
+            <artifactId>configuralize</artifactId>
+            <version>1.4.0</version>
         </dependency>
     </dependencies>
 </project>

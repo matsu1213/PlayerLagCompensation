@@ -1,0 +1,9 @@
+# Sets the maximum number of ticks to predict. -1 is unlimited.
+# Larger values may lead to inaccurate predicted positions or exploit lag compensation.
+max-predict-ticks: -1
+
+# Whether to predict knockback. This will increase the KB's response speed, but the predicted position may be inaccurate.
+predict-velocity: true
+
+# How many ticks ahead to forecast the sprint, or -1 for unlimited.
+max-sprint-ticks: 0

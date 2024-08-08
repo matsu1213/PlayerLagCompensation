@@ -6,6 +6,7 @@ import ac.grim.grimac.utils.data.Pair;
 import ac.grim.grimac.utils.nmsutil.Collisions;
 import ac.grim.grimac.utils.nmsutil.GetBoundingBox;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
@@ -154,8 +155,14 @@ public class CompensationPlayer {
 
     public Pair<Location,Boolean> predictLocation(int ticks){
         ticks = Math.abs(ticks);
+        if(PlayerLagCompensation.INSTANCE.getConfigManager().maxPredictTicks != -1){
+            ticks = Math.max(ticks, PlayerLagCompensation.INSTANCE.getConfigManager().maxPredictTicks);
+        }
 
         if(this.gp == null){
+            Player player = Bukkit.getPlayer(uuid);
+            return new Pair<>(player.getLocation(), player.isOnGround());
+        }else if(gp.bukkitPlayer.isFlying() || gp.bukkitPlayer.getGameMode() == GameMode.SPECTATOR){
             Player player = Bukkit.getPlayer(uuid);
             return new Pair<>(player.getLocation(), player.isOnGround());
         }
@@ -205,25 +212,26 @@ public class CompensationPlayer {
             Location calPreV = preV.clone();
 
             Location inputDirection = preV.clone().setDirection(preV.toVector());
+            sprinting = sprinting && (PlayerLagCompensation.INSTANCE.getConfigManager().sprintTicks == -1 || PlayerLagCompensation.INSTANCE.getConfigManager().sprintTicks >= i + 1);
             double d0 = sprinting ? Math.sin((inputDirection.getYaw()) * 0.017453292f): 0;
             double d1 = sprinting ? Math.cos((inputDirection.getYaw()) * 0.017453292f): 0;
 
             if(preGround){
                 if(preV.getX() != 0){
-                    calPreV.setX(preV.getX() * 0.6 * 0.91 );// (sprinting ? 0.1 * 1.3 * d0: 0.0));
+                    calPreV.setX(preV.getX() * 0.6 * 0.91 - (sprinting ? 0.1 * 1.3 * d0: 0.0));
                 }
                 if(preV.getZ() != 0){
-                    calPreV.setZ(preV.getZ() * 0.6 * 0.91 );// + (sprinting ? 0.1 * 1.3 * d1: 0.0));
+                    calPreV.setZ(preV.getZ() * 0.6 * 0.91 + (sprinting ? 0.1 * 1.3 * d1: 0.0));
                 }
             }else {
                 if(preV.getX() != 0){
-                    calPreV.setX(preV.getX() * 0.91 );// - (sprinting ? 0.02 * 1.3 * d0: 0.0));
+                    calPreV.setX(preV.getX() * 0.91  - (sprinting ? 0.02 * 1.3 * d0: 0.0));
                 }
                 if(preV.getY() != 0){
                     calPreV.setY((preV.getY() - 0.08) * 0.98);
                 }
                 if(preV.getZ() != 0){
-                    calPreV.setZ(preV.getZ() * 0.91 );// + (sprinting ? 0.02 * 1.3 * d1: 0.0));
+                    calPreV.setZ(preV.getZ() * 0.91 + (sprinting ? 0.02 * 1.3 * d1: 0.0));
                 }
             }
 

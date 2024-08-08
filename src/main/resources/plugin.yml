@@ -9,11 +9,9 @@ softdepend:
   - ViaBackwards
   - ViaRewind
   - Geyser-Spigot
-  - CrackShot
 
 loadbefore:
   - GrimAC
-#  - CrackShot
 
 commands:
   togglecompensation:

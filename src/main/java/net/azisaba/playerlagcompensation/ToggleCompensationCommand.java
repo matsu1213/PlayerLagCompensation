@@ -11,10 +11,10 @@ public class ToggleCompensationCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(shouldCompensate){
-            sender.sendMessage("ラグ補償を無効にしました。");
+            sender.sendMessage("Disabled lag compensation.");
             shouldCompensate = false;
         }else {
-            sender.sendMessage("ラグ補償を有効にしました。");
+            sender.sendMessage("Enabled lag compensation.");
             shouldCompensate = true;
         }
         return true;

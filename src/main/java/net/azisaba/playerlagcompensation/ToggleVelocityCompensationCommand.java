@@ -11,10 +11,10 @@ public class ToggleVelocityCompensationCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(shouldVelocityCompensate){
-            sender.sendMessage("ノックバックラグ補償を無効にしました。");
+            sender.sendMessage("Disabled velocity lag compensation.");
             shouldVelocityCompensate = false;
         }else {
-            sender.sendMessage("ノックバックラグ補償を有効にしました。");
+            sender.sendMessage("Enabled velocity lag compensation.");
             shouldVelocityCompensate = true;
         }
         return true;

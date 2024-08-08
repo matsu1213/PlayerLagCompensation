@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class PlayerLagCompensation extends JavaPlugin {
 
     static PlayerLagCompensation INSTANCE;
+    private ConfigManager configManager;
     private BukkitEventListener packetListener;
     private PacketEventListener packetEventListener;
 
@@ -21,6 +22,8 @@ public final class PlayerLagCompensation extends JavaPlugin {
         PacketEvents.getAPI().getSettings().reEncodeByDefault(true)
                 .checkForUpdates(false);
         PacketEvents.getAPI().load();
+
+        configManager = new ConfigManager();
     }
 
     @Override
@@ -51,6 +54,10 @@ public final class PlayerLagCompensation extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         PacketEvents.getAPI().terminate();
+    }
+
+    public ConfigManager getConfigManager(){
+        return configManager;
     }
 
     public GrimPlayer getGrimPlayer(Player player) {
