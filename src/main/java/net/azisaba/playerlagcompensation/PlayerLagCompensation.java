@@ -36,18 +36,12 @@ public final class PlayerLagCompensation extends JavaPlugin {
         //Bukkit.getPluginManager().registerEvents(new CSCompensation(), this);
 
         Bukkit.getPluginCommand("togglecompensation").setExecutor(new ToggleCompensationCommand());
-        Bukkit.getPluginCommand("togglevelocitycompensation").setExecutor(new ToggleCompensationCommand());
+        Bukkit.getPluginCommand("togglevelocitycompensation").setExecutor(new ToggleVelocityCompensationCommand());
 
         PacketEvents.getAPI().getEventManager().registerListener(packetEventListener);
         PacketEvents.getAPI().init();
 
         configManager = new ConfigManager();
-
-        //Bukkit.getScheduler().runTaskTimer(this, () -> {
-        //    for(Player player : Bukkit.getOnlinePlayers()){
-        //        ((CraftPlayer)player).getHandle().impulse = true;
-        //    }
-        //}, 0, 1);
     }
 
     @Override

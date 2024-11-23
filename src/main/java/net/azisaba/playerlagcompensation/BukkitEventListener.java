@@ -19,10 +19,10 @@ public class BukkitEventListener implements Listener {
 
     @EventHandler
     public void onPredictionComplete(CompletePredictionEvent e){
-        GrimPlayer gp = (GrimPlayer) e.getPlayer();
-        if(gp.getSetbackTeleportUtil().hasAcceptedSpawnTeleport) {
-            CompensationPlayer.getCompensationPlayer((gp.bukkitPlayer)).updateLocation(new Location(gp.bukkitPlayer.getWorld(), gp.x, gp.y, gp.z), gp.onGround);
-        }
+        //GrimPlayer gp = (GrimPlayer) e.getPlayer();
+        //(gp.getSetbackTeleportUtil().hasAcceptedSpawnTeleport) {
+        //    CompensationPlayer.getCompensationPlayer((gp.bukkitPlayer)).updateLocation(new Location(gp.bukkitPlayer.getWorld(), gp.x, gp.y, gp.z), gp.onGround);
+        //}
     }
 
     @EventHandler

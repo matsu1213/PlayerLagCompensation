@@ -39,7 +39,6 @@ public class CompensationPlayer {
     public boolean ground = false;
     public boolean lastGround = false;
     public boolean sprinting = false;
-    public boolean lastLastGround = false;
     public boolean xCollide = false;
     public boolean zCollide = false;
 
@@ -49,6 +48,7 @@ public class CompensationPlayer {
     public Location desyncV;
     public Location desyncA;
     public boolean desyncGround = false;
+    public boolean lastDesyncGround = false;
 
     public CompensationVelocityData lastVelocity = null;
 
@@ -72,9 +72,6 @@ public class CompensationPlayer {
     }
 
     public void updateLocation(Location location, boolean ground){
-        if(location.equals(lastLocation)){
-            return;
-        }
         if(gp != null){
             if(kbDesync && lastVelocity == null && ground && gp.checkManager.getKnockbackHandler().getFutureKnockback().getFirst() == null){
                 kbDesync = false;
@@ -89,17 +86,16 @@ public class CompensationPlayer {
         lastLocation = location;
         lastLastRelMove = lastRelMove;
         lastRelMove = this.subtractRots(lastLocation.clone().subtract(lastLastLocation), lastLastLocation);
-        if(!kbDesync && lastVelocity != null && gp != null && gp.checkManager.getKnockbackHandler().getFutureKnockback().getFirst() != null){
+        if(!kbDesync && lastVelocity != null && gp != null){
             kbDesync = true;
-            desyncV = lastLastRelMove.clone();
-            desyncLastLoc = lastLastLocation.clone();
-            desyncLoc = location.clone();
-            gp.bukkitPlayer.sendMessage("desync");
+            //desyncV = lastLastRelMove.clone();
+            //desyncLastLoc = lastLastLocation.clone();
+            //desyncLoc = location.clone();
+            //gp.bukkitPlayer.sendMessage("desync");
         }
         a = this.subtractRots(lastRelMove.clone().subtract(v), v);
         v = lastRelMove.clone();
 
-        this.lastLastGround = this.lastGround;
         this.lastGround = this.ground;
         this.ground = ground;
         this.sprinting = Bukkit.getPlayer(uuid).isSprinting();
@@ -110,24 +106,10 @@ public class CompensationPlayer {
         if(kbDesync){
             Location lastDesyncV = desyncV.clone();
             if(gp != null){
-                boolean flag = gp.likelyKB != null || gp.firstBreadKB != null;
-                if(flag){
-                    desyncV = gp.clientVelocity.clone().toLocation(gp.bukkitPlayer.getWorld());
-                    kbDesync = false;
-                    //gp.bukkitPlayer.sendMessage("resync");
-                    lastVelocity = null;
-                }
-                //gp.bukkitPlayer.sendMessage("realY: " + gp.clientVelocity.getY() + ", kb: " + flag);
                 //gp.bukkitPlayer.getWorld().spawnParticle(Particle.REDSTONE, desyncLoc, 0, 0.0001, 0.0, 255.0 / 255, 1.0);
             }
             desyncV = this.subtractRots(desyncLoc.clone().subtract(desyncLastLoc), desyncLastLoc.clone());
             desyncA = this.subtractRots(lastDesyncV.subtract(desyncV), desyncV);
-        }else {
-            //desyncLastLoc = desyncLoc.clone();
-            //desyncLoc = location.clone();
-            //desyncV = v.clone();
-            desyncA = a.clone();
-            this.desyncGround = ground;
         }
 
         if(ground){
@@ -136,6 +118,14 @@ public class CompensationPlayer {
         }
 
         calculatedLocations.clear();
+
+        if(kbDesync){
+            this.endOfTick(desyncV, lastDesyncGround);
+        }else {
+            this.endOfTick(v, lastGround);
+        }
+
+        this.predictLocation(PlayerLagCompensation.INSTANCE.getConfigManager().maxPredictTicks);
     }
 
     public void teleport(Location location){
@@ -155,14 +145,12 @@ public class CompensationPlayer {
 
     public Pair<Location,Boolean> predictLocation(int ticks){
         ticks = Math.abs(ticks);
-        if(PlayerLagCompensation.INSTANCE.getConfigManager().maxPredictTicks != -1){
-            ticks = Math.max(ticks, PlayerLagCompensation.INSTANCE.getConfigManager().maxPredictTicks);
-        }
+        ticks = Math.min(ticks, PlayerLagCompensation.INSTANCE.getConfigManager().maxPredictTicks);
 
         if(this.gp == null){
             Player player = Bukkit.getPlayer(uuid);
             return new Pair<>(player.getLocation(), player.isOnGround());
-        }else if(gp.bukkitPlayer.isFlying() || gp.bukkitPlayer.getGameMode() == GameMode.SPECTATOR){
+        }else if(gp.bukkitPlayer.isFlying() || gp.bukkitPlayer.getGameMode() == GameMode.SPECTATOR || gp.bukkitPlayer.isInsideVehicle()){
             Player player = Bukkit.getPlayer(uuid);
             return new Pair<>(player.getLocation(), player.isOnGround());
         }
@@ -174,7 +162,8 @@ public class CompensationPlayer {
         Location preLoc = kbDesync ? desyncLoc.clone() : lastLocation.clone();
         Location preV = kbDesync ? desyncV.clone() : v.clone();
         Location preA = a.clone();
-        boolean preGround = kbDesync ? desyncGround : this.ground;
+        boolean lastPreGround = kbDesync ? desyncGround : this.ground;
+        boolean preGround = lastPreGround;
 
         if(this.ground){
             preV.setY(Math.max(0, preV.getY()));
@@ -184,6 +173,7 @@ public class CompensationPlayer {
             desyncLastLoc = desyncLoc.clone();
             desyncLoc = preLoc.clone();
             desyncV = preV.clone();
+            lastDesyncGround = desyncGround;
             desyncGround = preGround;
             if(lastVelocity != null && lastVelocity.delayTicks == 0){
                 preV.add(lastVelocity.velocity);
@@ -203,6 +193,7 @@ public class CompensationPlayer {
             if(kbDesync && lastVelocity != null){
                 if(lastVelocity.delayTicks == i + 1){
                     preV.add(lastVelocity.velocity);
+                    //gp.bukkitPlayer.sendMessage("velocity: " + lastVelocity.velocity.getX());
                     lastVelocity.delayTicks--;
                     if(lastVelocity.delayTicks == 0){
                         lastVelocity = null;
@@ -216,6 +207,7 @@ public class CompensationPlayer {
             double d0 = sprinting ? Math.sin((inputDirection.getYaw()) * 0.017453292f): 0;
             double d1 = sprinting ? Math.cos((inputDirection.getYaw()) * 0.017453292f): 0;
 
+            /*
             if(preGround){
                 if(preV.getX() != 0){
                     calPreV.setX(preV.getX() * 0.6 * 0.91 - (sprinting ? 0.1 * 1.3 * d0: 0.0));
@@ -232,6 +224,22 @@ public class CompensationPlayer {
                 }
                 if(preV.getZ() != 0){
                     calPreV.setZ(preV.getZ() * 0.91 + (sprinting ? 0.02 * 1.3 * d1: 0.0));
+                }
+            }*/
+
+            if(lastPreGround){
+                if(preV.getX() != 0){
+                    calPreV.setX(preV.getX() - (sprinting ? 0.1 * 1.3 * d0: 0.0));
+                }
+                if(preV.getZ() != 0){
+                    calPreV.setZ(preV.getZ() + (sprinting ? 0.1 * 1.3 * d1: 0.0));
+                }
+            }else {
+                if(preV.getX() != 0){
+                    calPreV.setX(preV.getX() - (sprinting ? 0.02 * 1.3 * d0: 0.0));
+                }
+                if(preV.getZ() != 0){
+                    calPreV.setZ(preV.getZ() + (sprinting ? 0.02 * 1.3 * d1: 0.0));
                 }
             }
 
@@ -283,20 +291,48 @@ public class CompensationPlayer {
                 //preLoc.getWorld().spawnParticle(Particle.REDSTONE, preLoc, 0, 0.0001, 255.0 / 255, 0.0, 1.0);
             }
             calculatedLocations.put(i + 1, new Pair<>(preLoc.clone(), preGround));
+
             if(i == 0){
                 desyncLastLoc = desyncLoc.clone();
                 desyncLoc = preLoc.clone();
                 desyncV = preV.clone();
+                lastDesyncGround = desyncGround;
                 desyncGround = preGround;
             }
+
+            this.endOfTick(preV, lastPreGround);
         }
         if(kbDesync || true) {
             //preLoc.getWorld().spawnParticle(Particle.REDSTONE, preLoc, 0, 255.0 / 255, 0.0, 0.0, 1.0);
-            if(gp != null){
-                //gp.bukkitPlayer.sendMessage("desyncY: " + preV.getY() + ", desyncLocY: " + preLoc.getY());
+            if(gp != null && (preV.getX() != 0 || v.getX() != 0)){
+                //gp.bukkitPlayer.sendMessage("desyncVX: " + desyncV.getX() + ", realVX: " + v.getX());
             }
         }
         return new Pair<>(preLoc.clone(), preGround);
+    }
+
+    public void endOfTick(Location vector, boolean ground){
+        if(ground){
+            if(vector.getX() != 0){
+                vector.setX(vector.getX() * 0.6 * 0.91);
+            }
+            if(vector.getY() != 0){
+                vector.setY((vector.getY() - 0.08) * 0.98);
+            }
+            if(vector.getZ() != 0){
+                vector.setZ(vector.getZ() * 0.6 * 0.91);
+            }
+        }else {
+            if(vector.getX() != 0){
+                vector.setX(vector.getX() * 0.91);
+            }
+            if(vector.getY() != 0){
+                vector.setY((vector.getY() - 0.08) * 0.98);
+            }
+            if(vector.getZ() != 0){
+                vector.setZ(vector.getZ() * 0.91);
+            }
+        }
     }
 
     public void removePlayer(){

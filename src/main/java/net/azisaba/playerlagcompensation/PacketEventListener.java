@@ -1,10 +1,13 @@
 package net.azisaba.playerlagcompensation;
 
+import ac.grim.grimac.GrimAPI;
 import ac.grim.grimac.player.GrimPlayer;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.teleport.RelativeFlag;
 import com.github.retrooper.packetevents.util.Vector3d;
@@ -22,6 +25,26 @@ public class PacketEventListener extends PacketListenerAbstract {
 
     public PacketEventListener() {
         super(PacketListenerPriority.LOWEST);
+    }
+
+    @Override
+    public void onPacketReceive(PacketReceiveEvent e){
+        if (e.getConnectionState() != ConnectionState.PLAY) return;
+        GrimPlayer gp = GrimAPI.INSTANCE.getPlayerDataManager().getPlayer((Player) e.getPlayer());
+        if (gp == null) return;
+        if(!gp.getSetbackTeleportUtil().hasAcceptedSpawnTeleport) return;
+        if(gp.packetStateData.lastPacketWasOnePointSeventeenDuplicate) return;
+
+        if(WrapperPlayClientPlayerFlying.isFlying(e.getPacketType())){
+            WrapperPlayClientPlayerFlying f = new WrapperPlayClientPlayerFlying(e);
+            Vector position;
+            if(f.hasPositionChanged()){
+                position = new Vector(f.getLocation().getX(), f.getLocation().getY(), f.getLocation().getZ());
+            }else {
+                position = new Vector(gp.x, gp.y, gp.z);
+            }
+            CompensationPlayer.getCompensationPlayer((gp.bukkitPlayer)).updateLocation(new Location(gp.bukkitPlayer.getWorld(), position.getX(), position.getY(), position.getZ()), gp.onGround);
+        }
     }
 
     @Override
@@ -101,20 +124,21 @@ public class PacketEventListener extends PacketListenerAbstract {
                     boolean ground = result.onGround;
                     Location rel = result.v;
 
-                    //we don't send a rel move packet if the player is moving too far
-                    if (rel.getX() > 8 || rel.getY() > 8 || rel.getZ() > 8) {
+                    if (rel.getX() > 0 || rel.getY() > 0 || rel.getZ() > 0) {
                         //Location loc = player.getLocation();
                         this.sendMoveAsTeleport(e.getPlayer(), packet.getEntityId(), predictedLoc, ground);
                         result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                         e.setCancelled(true);
                         return;
+                    }else {
+                        result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                     }
 
-                    WrapperPlayServerEntityRelativeMoveAndRotation nPacket = new WrapperPlayServerEntityRelativeMoveAndRotation(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), packet.getYaw(), packet.getPitch(), ground);
-                    e.setCancelled(true);
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
+                    //WrapperPlayServerEntityRelativeMoveAndRotation nPacket = new WrapperPlayServerEntityRelativeMoveAndRotation(packet.getEntityId(), rel.getX(), rel.getY(), rel.getZ(), packet.getYaw(), packet.getPitch(), ground);
+                    //e.setCancelled(true);
+                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(e.getPlayer(), nPacket);
                     //e.markForReEncode(true);
-                    result.entry.updateSentLocation(predictedLoc, result.delayTicks);
+                    //result.entry.updateSentLocation(predictedLoc, result.delayTicks);
                 }
             } else if (e.getPacketType() == PacketType.Play.Server.ENTITY_TELEPORT) {
                 WrapperPlayServerEntityTeleport packet = new WrapperPlayServerEntityTeleport(e);
@@ -143,7 +167,7 @@ public class PacketEventListener extends PacketListenerAbstract {
                     if (cp.gp != null) {
                         sentPing = cp.gp.getTransactionPing();
                     }
-                    int delayTicks = sentPing / 100;//(int) Math.round(sentPing / 100D);
+                    int delayTicks = (int) Math.round(sentPing / 100D);
                     cp.lastVelocity = new CompensationVelocityData(new Vector(packet.getVelocity().x, packet.getVelocity().y, packet.getVelocity().z), delayTicks);
                 }
                 e.markForReEncode(false);
@@ -174,9 +198,15 @@ public class PacketEventListener extends PacketListenerAbstract {
             receivePing = receiveTargetUser.getTransactionPing();
         }
         int delay = sentPing + receivePing;
-        int delayTicks = delay / 100;//(int) Math.round(delay / 100D);
+        int delayTicks = (int) Math.round(delay / 100D);
 
         CompensationPlayer cp = CompensationPlayer.getCompensationPlayer(player);
+
+        // kb desyncの時、相手側クライアントの影響を受けず全てサーバーで予測がされるため
+        if(cp.kbDesync){
+            delayTicks = (int) Math.round(sentPing / 100D);
+        }
+
         CompensationPlayer.CompensationPlayerEntry entry = cp.entryMap.get(receive.getUniqueId());
         if(entry == null){
             entry = (cp).new CompensationPlayerEntry(cp.uuid, cp);

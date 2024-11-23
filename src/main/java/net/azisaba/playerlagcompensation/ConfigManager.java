@@ -33,7 +33,7 @@ public class ConfigManager {
         } catch (Exception e) {
             throw new RuntimeException("Failed to load config", e);
         }
-        maxPredictTicks = config.getIntElse("max-predict-ticks", -1);
+        maxPredictTicks = Math.max(Math.min(config.getIntElse("max-predict-ticks", 4), 4), 0);
         ToggleVelocityCompensationCommand.shouldVelocityCompensate = config.getBooleanElse("predict-velocity", true);
         sprintTicks = config.getIntElse("max-sprint-ticks", 0);
     }
